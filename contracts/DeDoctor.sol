@@ -18,17 +18,17 @@ contract DeDoctor {
         address docAddress;
     }
 
-    struct PhamacySturct {
-        uint pharmacyId;
+    struct Pharmacy {
+        uint id;
         string name;
         string city;
         string ownerName;
         address ownerAddress;
-        string pharmacyNumber;
-        string pharmacyUri;
+        string number;
+        string uri;
     }
 
-    struct PatientStruct {
+    struct Patient {
         uint patientId;
         address walletAddress;
         string name;
@@ -37,10 +37,10 @@ contract DeDoctor {
         string patientUri;
     }
 
-    struct AppointmentStruct {
-        uint appojntemtId;
-        uint patientId;
-        uint doctorId;
+    struct Appointment {
+        uint256 id;
+        uint256 patientId;
+        uint256 doctorId;
         string appointmentUri;
         string symptoms;
         string pastSymptoms;
@@ -50,9 +50,23 @@ contract DeDoctor {
     }
 
     mapping(uint => DoctorProfile) doctors;
-    mapping(uint => PhamacySturct) pharmacies;
-    mapping(uint => PatientStruct) patients;
-    mapping(uint => AppointmentStruct) appointments;
+    mapping(uint => Pharmacy) public pharmacies;
+    mapping(uint => Patient) patients;
+
+    mapping(uint256 => Appointment) private appointmentRecords;
+    mapping(uint256 => Appointment[]) private appointmentsByPatientId;
+    mapping(uint256 => Appointment[]) private appointmentsByDoctorId;
+
+    event AppointmentCreated(
+        uint256 indexed id,
+        uint256 indexed patientId,
+        uint256 indexed doctorId,
+        string symptoms,
+        string pastSymptoms,
+        string date,
+        string time,
+        address walletAddress
+    );
 
     event RegisteredDoctor(
         string indexed name,
@@ -63,13 +77,22 @@ contract DeDoctor {
         address docAddress
     );
 
-    event RegsiteredPharmacy(
+    event RegisteredPharmacy(
         string indexed name,
         string indexed city,
         string indexed ownerName,
         address ownerAddress,
-        string pharmacyNumber,
-        string pharmacyUri
+        string number,
+        string uri
+    );
+
+    event PatientRegistered(
+        uint indexed patientId,
+        address indexed walletAddress,
+        string name,
+        string gender,
+        string city,
+        string patientUri
     );
 
     function registerDoctor(
@@ -82,14 +105,16 @@ contract DeDoctor {
         string memory profileURI
     ) public {
         doctorCount++;
-        doctors[doctorCount].name = name;
-        doctors[doctorCount].gender = gender;
-        doctors[doctorCount].city = city;
-        doctors[doctorCount].language = language;
-        doctors[doctorCount].docAddress = docAddress;
-        doctors[doctorCount].profileURI = profileURI;
-        doctors[doctorCount].doctorId = doctorCount;
-        doctors[doctorCount].price = price;
+        doctors[doctorCount] = DoctorProfile({
+            doctorId: doctorCount,
+            name: name,
+            gender: gender,
+            city: city,
+            language: language,
+            price: price,
+            profileURI: profileURI,
+            docAddress: docAddress
+        });
         emit RegisteredDoctor(
             name,
             gender,
@@ -109,8 +134,7 @@ contract DeDoctor {
     function getAllDoctors() public view returns (DoctorProfile[] memory) {
         DoctorProfile[] memory allDoctors = new DoctorProfile[](doctorCount);
         for (uint i = 0; i < doctorCount; i++) {
-            DoctorProfile storage currentDoctor = doctors[i + 1];
-            allDoctors[i] = currentDoctor;
+            allDoctors[i] = doctors[i + 1];
         }
         return allDoctors;
     }
@@ -120,25 +144,27 @@ contract DeDoctor {
         string memory city,
         string memory ownerName,
         address ownerAddress,
-        string memory pharmacyNumber,
-        string memory pharmacyUri
-    ) public returns (PhamacySturct memory) {
+        string memory number,
+        string memory uri
+    ) public returns (Pharmacy memory) {
         pharmacyCount++;
-        pharmacies[pharmacyCount].pharmacyId = pharmacyCount;
-        pharmacies[pharmacyCount].name = name;
-        pharmacies[pharmacyCount].city = city;
-        pharmacies[pharmacyCount].ownerName = ownerName;
-        pharmacies[pharmacyCount].ownerAddress = ownerAddress;
-        pharmacies[pharmacyCount].pharmacyNumber = pharmacyNumber;
-        pharmacies[pharmacyCount].pharmacyUri = pharmacyUri;
+        pharmacies[pharmacyCount] = Pharmacy({
+            id: pharmacyCount,
+            name: name,
+            city: city,
+            ownerName: ownerName,
+            ownerAddress: ownerAddress,
+            number: number,
+            uri: uri
+        });
 
-        emit RegsiteredPharmacy(
+        emit RegisteredPharmacy(
             name,
             city,
             ownerName,
             ownerAddress,
-            pharmacyNumber,
-            pharmacyUri
+            number,
+            uri
         );
         return pharmacies[pharmacyCount];
     }
@@ -149,120 +175,120 @@ contract DeDoctor {
         string memory gender,
         string memory city,
         string memory patientUri
-    ) public {
+    ) public returns (uint) {
+        for (uint i = 1; i <= patientCount; i++) {
+            require(
+                patients[i].walletAddress != walletAddress,
+                "Patient already exists"
+            );
+        }
+
         patientCount++;
-        patients[patientCount].patientId = patientCount;
-        patients[patientCount].walletAddress = walletAddress;
-        patients[patientCount].name = name;
-        patients[patientCount].city = city;
-        patients[patientCount].gender = gender;
-        patients[patientCount].patientUri = patientUri;
+        patients[patientCount] = Patient({
+            patientId: patientCount,
+            walletAddress: walletAddress,
+            name: name,
+            gender: gender,
+            city: city,
+            patientUri: patientUri
+        });
+
+        emit PatientRegistered(
+            patientCount,
+            walletAddress,
+            name,
+            gender,
+            city,
+            patientUri
+        );
+
+        return patientCount;
     }
 
-    function createAppoitment(
-        uint patientId,
-        uint doctorId,
+    function createAppointment(
+        uint256 patientId,
+        uint256 doctorId,
         string memory symptoms,
         string memory pastSymptoms,
         string memory date,
         string memory time
     ) public {
         appointmentCount++;
-        appointments[appointmentCount].appojntemtId = appointmentCount;
-        appointments[appointmentCount].doctorId = doctorId;
-        appointments[appointmentCount].patientId = patientId;
-        appointments[appointmentCount].symptoms = symptoms;
-        appointments[appointmentCount].pastSymptoms = pastSymptoms;
-        appointments[appointmentCount].date = date;
-        appointments[appointmentCount].time = time;
+        appointmentRecords[appointmentCount] = Appointment({
+            id: appointmentCount,
+            patientId: patientId,
+            doctorId: doctorId,
+            appointmentUri: "",
+            symptoms: symptoms,
+            pastSymptoms: pastSymptoms,
+            date: date,
+            time: time,
+            walletAddress: msg.sender
+        });
+        appointmentsByPatientId[patientId].push(
+            appointmentRecords[appointmentCount]
+        );
+        appointmentsByDoctorId[doctorId].push(
+            appointmentRecords[appointmentCount]
+        );
+
+        emit AppointmentCreated(
+            appointmentCount,
+            patientId,
+            doctorId,
+            symptoms,
+            pastSymptoms,
+            date,
+            time,
+            msg.sender
+        );
     }
 
     function getPharmacyById(
         uint pharmacyId
-    ) public view returns (PhamacySturct memory) {
+    ) public view returns (Pharmacy memory) {
         return pharmacies[pharmacyId];
     }
 
-    function getAllPharmacies() public view returns (PhamacySturct[] memory) {
-        PhamacySturct[] memory allPharmacy = new PhamacySturct[](pharmacyCount);
-        for (uint i = 0; i < doctorCount; i++) {
-            PhamacySturct storage currentPharmacy = pharmacies[i + 1];
-            allPharmacy[i] = currentPharmacy;
+    function getAllPharmacies() public view returns (Pharmacy[] memory) {
+        Pharmacy[] memory allPharmacies = new Pharmacy[](pharmacyCount);
+        for (uint i = 1; i <= pharmacyCount; i++) {
+            allPharmacies[i - 1] = pharmacies[i];
         }
-        return allPharmacy;
+        return allPharmacies;
     }
 
     function getPatientByWalletAddress(
         address walletAddress
-    ) public view returns (PatientStruct memory) {
+    ) public view returns (Patient memory) {
         for (uint i = 1; i <= patientCount; i++) {
-            if (walletAddress == patients[i].walletAddress) {
+            if (patients[i].walletAddress == walletAddress) {
                 return patients[i];
             }
         }
-        return patients[1];
+        revert("Patient not found");
     }
 
     function getDoctorByWalletAddress(
         address walletAddress
     ) public view returns (DoctorProfile memory) {
-        for (uint i = 1; i <= patientCount; i++) {
+        for (uint i = 1; i <= doctorCount; i++) {
             if (walletAddress == doctors[i].docAddress) {
                 return doctors[i];
             }
         }
-        return doctors[1];
+        revert("No doctor found for the given wallet address");
     }
 
-    function getAppimtmentsByDoctortId(
-        uint doctorId
-    ) public view returns (AppointmentStruct[] memory) {
-        uint doctorAppointmentCount = 0;
-        for (uint i = 1; i <= appointmentCount; i++) {
-            if (doctorId == appointments[i].doctorId) {
-                doctorAppointmentCount++;
-            }
-        }
-        AppointmentStruct[]
-            memory doctorAppointments = new AppointmentStruct[](
-                doctorAppointmentCount
-            );
-        uint tempCount = 0;
-        for (uint i = 0; i <= appointmentCount; i++) {
-            if (doctorId == appointments[i].doctorId) {
-                AppointmentStruct storage currentAppointment = appointments[
-                    i + 1
-                ];
-                doctorAppointments[tempCount] = currentAppointment;
-                tempCount++;
-            }
-        }
-        return doctorAppointments;
+    function getAppointmentsByDoctorId(
+        uint256 doctorId
+    ) public view returns (Appointment[] memory) {
+        return appointmentsByDoctorId[doctorId];
     }
 
-    function getAppimtmentsByPatientId(
-        uint patientId
-    ) public view returns (AppointmentStruct[] memory) {
-        uint patientAppointmentCount = 0;
-        for (uint i = 1; i <= appointmentCount; i++) {
-            if (patientId == appointments[i].patientId) {
-                patientAppointmentCount++;
-            }
-        }
-        AppointmentStruct[]
-            memory patientAppointments = new AppointmentStruct[](
-                patientAppointmentCount
-            );
-        uint tempCount = 0;
-        for (uint i = 0; i <= appointmentCount; i++) {
-            if (patientId == appointments[i].patientId) {
-                AppointmentStruct storage currentAppointment = appointments[
-                    i + 1
-                ];
-                patientAppointments[tempCount] = currentAppointment;
-                tempCount++;
-            }
-        }
-        return patientAppointments;
+    function getAppointmentsByPatientId(
+        uint256 patientId
+    ) public view returns (Appointment[] memory) {
+        return appointmentsByPatientId[patientId];
     }
 }
