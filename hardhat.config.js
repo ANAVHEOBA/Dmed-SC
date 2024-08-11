@@ -1,7 +1,8 @@
 require("@nomicfoundation/hardhat-toolbox");
 require("@nomiclabs/hardhat-ethers");
 require("dotenv").config();
-const SHARDEUM_RPC = process.env.SHARDEUM_RPC;
+
+const WEAVEDB_API_URL = process.env.WEAVEDB_API_URL;
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
 /** @type import('hardhat/config').HardhatUserConfig */
@@ -17,11 +18,15 @@ module.exports = {
     },
   },
   networks: {
-    liberty: {
-      url: SHARDEUM_RPC,
+    goerli: {
+      url: WEAVEDB_API_URL,  // Use the correct variable here
       accounts: [PRIVATE_KEY],
-      chainId: 8081,
+      chainId: 5,
+    },
+    mainnet: {
+      url: "https://eth-mainnet.alchemyapi.io/v2/your-api-key",
+      accounts: [PRIVATE_KEY],
+      chainId: 1,
     },
   },
-  
 };

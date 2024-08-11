@@ -291,4 +291,34 @@ contract DeDoctor {
     ) public view returns (Appointment[] memory) {
         return appointmentsByPatientId[patientId];
     }
+
+    // --- Authentication with Signature Verification ---
+    
+    // Function to verify the signature
+    function verifySignature(bytes32 message, bytes memory signature) public pure returns (address) {
+        bytes32 ethSignedMessage = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", message));
+        (uint8 v, bytes32 r, bytes32 s) = splitSignature(signature);
+        return ecrecover(ethSignedMessage, v, r, s);
+    }
+
+    // Utility function to split the signature
+    function splitSignature(bytes memory sig) internal pure returns (uint8, bytes32, bytes32) {
+        require(sig.length == 65, "Invalid signature length");
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+        assembly {
+            r := mload(add(sig, 32))
+            s := mload(add(sig, 64))
+            v := byte(0, mload(add(sig, 96)))
+        }
+        return (v, r, s);
+    }
+
+    // Example: Function requiring authentication
+    function authenticatedFunction(bytes32 message, bytes memory signature) public {
+        address signer = verifySignature(message, signature);
+        require(signer == msg.sender, "Invalid signature");
+        // Continue with function logic...
+    }
 }

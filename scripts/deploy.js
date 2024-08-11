@@ -1,18 +1,31 @@
+const WeaveDB = require("weavedb-sdk");
+const ethers = require("ethers");
+
 async function main() {
-  
-  const DeDoctor = await hre.ethers.getContractFactory("DeDoctor");
-  const deDoctor = await DeDoctor.deploy();
+  try {
+    // Deploy the DeDoctor contract
+    const DeDoctor = await hre.ethers.getContractFactory("DeDoctor");
+    const deDoctor = await DeDoctor.deploy();
 
-  await deDoctor.deployed();
+    await deDoctor.deployed();
 
-  console.log(
-    `DeDoctor contract deployed to ${deDoctor.address}`
-  );
+    console.log(`DeDoctor contract deployed to ${deDoctor.address}`);
+
+    // Initialize WeaveDB
+    const db = new WeaveDB({
+      contractTxId: "DznefHbFhcyqyjZ0aNGqsWwkjcwRDlraUR72EkXames",
+    });
+
+    await db.init();
+
+    // Example: Interact with WeaveDB (store the contract address, for example)
+    await db.set("DeDoctorContracts", { address: deDoctor.address });
+
+    console.log("DeDoctor contract address stored in WeaveDB");
+  } catch (error) {
+    console.error("Error in main function:", error);
+    process.exitCode = 1;
+  }
 }
 
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+main();
