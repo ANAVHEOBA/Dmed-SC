@@ -2,8 +2,7 @@ require("@nomicfoundation/hardhat-toolbox");
 require("@nomiclabs/hardhat-ethers");
 require("dotenv").config();
 
-const WEAVEDB_API_URL = process.env.WEAVEDB_API_URL;
-const PRIVATE_KEY = process.env.PRIVATE_KEY;
+const { ALCHEMY_URL, PRIVATE_KEY, WEAVEDB_API_URL } = process.env;
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
@@ -18,10 +17,10 @@ module.exports = {
     },
   },
   networks: {
-    goerli: {
-      url: WEAVEDB_API_URL,  // Use the correct variable here
+    sepolia: {
+      url: ALCHEMY_URL,  // Use Alchemy URL for Goerli
       accounts: [PRIVATE_KEY],
-      chainId: 5,
+      chainId: 11155111,
     },
     mainnet: {
       url: "https://eth-mainnet.alchemyapi.io/v2/your-api-key",

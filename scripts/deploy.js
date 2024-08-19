@@ -1,3 +1,4 @@
+const hre = require("hardhat");
 const WeaveDB = require("weavedb-sdk");
 const ethers = require("ethers");
 
@@ -6,7 +7,6 @@ async function main() {
     // Deploy the DeDoctor contract
     const DeDoctor = await hre.ethers.getContractFactory("DeDoctor");
     const deDoctor = await DeDoctor.deploy();
-
     await deDoctor.deployed();
 
     console.log(`DeDoctor contract deployed to ${deDoctor.address}`);
@@ -18,7 +18,7 @@ async function main() {
 
     await db.init();
 
-    // Example: Interact with WeaveDB (store the contract address, for example)
+    // Example: Interact with WeaveDB (store the contract address)
     await db.set("DeDoctorContracts", { address: deDoctor.address });
 
     console.log("DeDoctor contract address stored in WeaveDB");
